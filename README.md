@@ -21,4 +21,6 @@ The example in testLeakyWaves requires RandomJointEig,
 https://github.com/borplestenjak/RandomJointEig,
 Bor Plestenjak, Hauke Gravenkamp, Daniel Kiefer 2024.
 
+Emil Graf and Alex Townsend, 2025.
+
 
