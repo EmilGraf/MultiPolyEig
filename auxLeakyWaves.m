@@ -12,7 +12,7 @@ function sols = auxLeakyWaves(L2,L1,L0,M,R1,R2,k1,k2,mu)
 
 % E Graf and A Townsend, 2025
 
-%%%Set up in monomial basis
+% Set up in monomial basis
 
 % A{4,1} = -(L0 + mu^2*M - k1^2*R3 -k2^2*R4);
 A{4,1} = -(L0 + mu^2*M);
@@ -35,7 +35,7 @@ A{3,3} = zeros(2);
 A{3,4} = eye(2);
 A{3,5} = [0 -1;1 0];
 
-%%%Convert to Chebyshev
+% Convert to Chebyshev
 
 F1 = zeros([size(L1) 2 2 3]);
 F2 = zeros(2,2,2,2,3);
@@ -65,6 +65,8 @@ options.res = 100;
 F1t = F1;
 F2t = F2;
 F3t = F3;
+
+% Solve
 
 for ii = 1:3
 options.evblock = evblockv(ii);
@@ -105,7 +107,7 @@ end
 
 Ft = {F1t;F2t;F3t};
 
-%%%Get candidate roots
+% Get candidate roots
 r = multipolyeig(Ft,options);
 
 if ii > 1

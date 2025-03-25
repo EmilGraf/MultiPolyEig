@@ -1,10 +1,10 @@
 function roots = multipolyeig(F,options)
 %%% Global Solver for Polynomial Multiparameter Eigenvalue Problems
-%%% For $d=1,2,3$, the algorithm returns the common eigenvalues of F = cell(F1,...,Fd),
+%%% For d=1,2,3, the algorithm returns the common eigenvalues of F = cell(F1,...,Fd),
 %%% where Fi are d-parameter polynomial matrices, given as d+2 dimensional
 %%% tensors where the last d dimensions correspond to variables
 %%% and the first two to matrix dimensions.
-%%% The algorithm is based on the hidden variable Dixon method from
+%%% The algorithm is based on the hidden variable Dixon resultant method from
 %%% E. Graf and A. Townsend, "A Hidden Variable Resultant Method for the
 %%% Polynomial Multiparameter Eigenvalue Problem," 2025.
 
@@ -25,7 +25,6 @@ d = size(F,1);
 
 %%%Extract dimensions, last d columns give degree in each variable, first 2
 %%%give matrix dimensions (which must match)
-
 dims = zeros(d,d+2);
 for i=1:d
     dims(i,:) = size(F{i});
@@ -59,7 +58,6 @@ function roots = runPolyEig(F,evblock)
 d = size(F,1);
 %%%Extract dimensions, last d columns give degree in each variable, first 2
 %%%give matrix dimensions (which must match)
-
 dims = zeros(d,d+2);
 for i=1:d
     dims(i,:) = size(F{i});
@@ -79,15 +77,11 @@ R = tensorDixon(F,d,dims);
 %%%Solve via colleague linearization
 [lambda,V] = singChebPEP(flip(R,3));
 
-%%%Extract eigenvectors of the pencil from the last block of the
-%%%eigenvectors of the linearization
-%V = V(end-size(R,1)+1:end,:);
-
 %%%Extract roots
 roots = zeros(size(lambda,1),d);
 roots(:,d) = lambda;
 
-%%%project eigenvectors
+%%%Detect generic null space
     v = flip(vandercheb(randn,size(R,3)));
     %%%Evaluate
     a = size(R,1);
@@ -95,11 +89,6 @@ roots(:,d) = lambda;
     [~,S,W] = svd(T);
     idx = find(abs(diag(S)/S(1,1))>1e-13,1,'last');
     N = W(:,idx+1:end);
-    % for i = 1:size(V,2)
-    %    for j = 1:size(N,2)
-    %        V(:,i) = V(:,i) - (V(:,i).'*N(:,j))*N(:,j);
-    %    end
-    % end
 
 %%%d=2
 if d==2
@@ -137,8 +126,6 @@ else
     else
         ind = ones(size(tmp,1));
     end
-    %tmp = tmp(ind,:);
-    %roots(:,1) = median(tmp,1,'omitnan');
 
     tmp = tmp(ind,:);
     Vt = Vt(ind,:);
@@ -318,8 +305,6 @@ roots(:,d) = lambda;
     else
         ind = ones(size(tmp,1));
     end
-        %tmp = tmp(ind,:);
-        %roots(:,1) = median(tmp,1,'omitnan');
 
     tmp = tmp(ind,:);
     Vt = Vt(ind,:);
@@ -410,8 +395,6 @@ roots(:,d) = lambda;
         else
             ind = ones(size(tmp,1));
         end
-        %tmp = tmp(ind,:);
-        %roots(:,1) = median(tmp,1,'omitnan');
 
         tmp = tmp(ind,:);
         Vt = Vt(ind,:);
@@ -595,15 +578,8 @@ function R = scalarTensorDixon(F,dims,m,d,xd)
 %%%Constructs the tensor Dixon matrix of F at a specific value of xd (d matrix polynomials in d-1
 %%%variables)
 
-%%%Set up index
-index = cell(d+2,1);
-index(:) = {':'};
-
 %%%Evaluate F at xd
 for i = 1:d
-    G = F{i};
-    H = zeros(dims(i,1:end-1));
-
     %%%Get Chebyshev vandermonde
     v = flip(vandercheb(xd,dims(i,d+2)));
 
@@ -632,7 +608,6 @@ end
 
 function A = mvals2coeffs(B,d)
 %Matrix vals2coeffs, univariate
-
 A = zeros([size(B,1:2),d]);
     for i = 1:size(B,1)
         for j = 1:size(B,2)
