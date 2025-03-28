@@ -59,7 +59,7 @@ F3(:,:,1,2,1) = A{2,4};
 F3(:,:,1,1,2) = A{2,2};
 F3(:,:,1,1,3) = .5*A{2,5};
 
-evblockv = [0 40 20];
+evblockv = [0 0 40 20];
 options.res = 100;
 
 F1t = F1;
@@ -68,10 +68,10 @@ F3t = F3;
 
 % Solve
 
-for ii = 1:3
+for ii = 1:4
 options.evblock = evblockv(ii);
 
-if ii > 1
+if ii > 2
     %%%Random shift
     [Q,~] = qr(randn(3));
     F1t(:,:,2,1,1) = Q(1,1)*F1(:,:,2,1,1) + Q(1,2)*F1(:,:,1,2,1) + Q(1,3)*F1(:,:,1,1,2);
@@ -110,7 +110,7 @@ Ft = {F1t;F2t;F3t};
 % Get candidate roots
 r = multipolyeig(Ft,options);
 
-if ii > 1
+if ii > 2
     r = r*Q;
 end
 
