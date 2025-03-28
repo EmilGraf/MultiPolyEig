@@ -15,12 +15,33 @@ Options in options are res, the final tolerance for the residual check,
 and evblock, which determines the number of entries used to compute 
 the first d-1 coordinates of solutions.
 
+Emil Graf and Alex Townsend, 2025.
+
+# Test Files
+
 Test files implement the examples given in section 6 of [1].
 
-The example in testLeakyWaves requires RandomJointEig, 
-https://github.com/borplestenjak/RandomJointEig,
-Bor Plestenjak, Haoze He, Hauke Gravenkamp, Daniel Kiefer 2024.
+# Aeroelastic Flutter
 
-Emil Graf and Alex Townsend, 2025.
+The file testAEF implements the example in section 6.1 of [1], which is a 
+2PEP related to aeroelastic flutter from A. Pons, S. Gutschmidt, 
+Multiparameter spectral analysis for aeroelastic instability problems, 
+J. Appl. Mech. 85 (6) (2018) 061011. doi:10.1115/ 1.4039671.
+
+# Leaky Waves
+
+The file testLeakyWaves implements the example in section 6.2 of [1],
+which is a 3PEP that computes wavenumbers of leaky waves from
+H. Gravenkamp, B. Plestenjak, D. A. Kiefer, E. Jarlebring, 
+Computation of leaky waves in layered structures coupled to unbounded 
+media by exploiting multiparameter eigenvalue problems, 
+J. Sound Vib. 596 (2025) 118716. https://doi.org/10.1016/j.jsv.2024.118716.
+
+The example in testLeakyWaves requires files from RandomJointEig, 
+https://github.com/borplestenjak/RandomJointEig,
+Bor Plestenjak, Haoze He, Hauke Gravenkamp, Daniel Kiefer 2024. 
+To run this example, first download RandomJointEig and ensure that it is on the MATLAB path.
+
+
 
 
