@@ -31,7 +31,7 @@ k1t = cell(length(w));
 kyL1t = k1t;
 kyS1t = k1t;
 % this loop is set up to be replaced with parfor if desired
-parfor i = 1:length(w)
+for i = 1:length(w)
     disp(strcat("run: ", string(i)));
     kappa = w(i)./c;
     kappal = kappa(1);

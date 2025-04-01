@@ -557,7 +557,7 @@ k = prod(m(1:d-1)-ones(1,d-1),'all')*b*factorial(d-1);
 dy = sum(dims(:,d+2))-d+1;
 R = zeros(k,k,dy);
 
-xd = chebpts(dy);
+xd = sin(pi*(-dy+1:2:dy-1)/(2*(dy-1))).';
 for i = 1:dy
     R(:,:,i) = scalarTensorDixon(F,dims,m,d,xd(i));
 end
