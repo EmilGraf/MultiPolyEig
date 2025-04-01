@@ -29,7 +29,7 @@ Multiparameter spectral analysis for aeroelastic instability problems,
 J. Appl. Mech. 85 (6) (2018) 061011. doi:10.1115/ 1.4039671.
 
 The example in testAEF requires files from MultiParEig, 
-https://www.mathworks.com/matlabcentral/fileexchange/47844-multipareig, Bor Plestenjak,2025.
+https://www.mathworks.com/matlabcentral/fileexchange/47844-multipareig, Bor Plestenjak, 2025.
 To run this example, first download and install MultiParEig.
 
 # Leaky Waves
