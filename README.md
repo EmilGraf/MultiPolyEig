@@ -41,10 +41,10 @@ Computation of leaky waves in layered structures coupled to unbounded
 media by exploiting multiparameter eigenvalue problems, 
 J. Sound Vib. 596 (2025) 118716. https://doi.org/10.1016/j.jsv.2024.118716.
 
-The example in testLeakyWaves requires files from RandomJointEig, 
+The example in testLeakyWaves requires files from MultiParEig and RandomJointEig, 
 https://github.com/borplestenjak/RandomJointEig,
 Bor Plestenjak, Haoze He, Hauke Gravenkamp, Daniel Kiefer 2024. 
-To run this example, first download RandomJointEig and ensure that it is on the MATLAB path.
+To run this example, first download MultiParEig and RandomJointEig and ensure that both are on the MATLAB path.
 
 
 
