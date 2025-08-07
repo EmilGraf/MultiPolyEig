@@ -59,7 +59,7 @@ F3(:,:,1,2,1) = A{2,4};
 F3(:,:,1,1,2) = A{2,2};
 F3(:,:,1,1,3) = .5*A{2,5};
 
-evblockv = [0 0 40 20];
+evblockv = [40 30 20 40 30 20];
 options.res = 100;
 
 F1t = F1;
@@ -68,10 +68,10 @@ F3t = F3;
 
 % Solve
 
-for ii = 1:4
+for ii = 1:6
 options.evblock = evblockv(ii);
 
-if ii > 2
+if ii > 3
     %%%Random shift
     [Q,~] = qr(randn(3));
     F1t(:,:,2,1,1) = Q(1,1)*F1(:,:,2,1,1) + Q(1,2)*F1(:,:,1,2,1) + Q(1,3)*F1(:,:,1,1,2);
@@ -110,7 +110,7 @@ Ft = {F1t;F2t;F3t};
 % Get candidate roots
 r = multipolyeig(Ft,options);
 
-if ii > 2
+if ii > 3
     r = r*Q;
 end
 
@@ -127,7 +127,7 @@ sols = [k lambda(:,1)./k lambda(:,2)./k];
 
 % take sols with beta and eta close to sqrt(k1^2-k^2) and sqrt(k1^2-k^2)
     test_sr = abs(log(abs(sqrt(k1^2-sols(:,1).^2)./sols(:,2)))) + abs(log(abs(sqrt(k2^2-sols(:,1).^2)./sols(:,3))));
-    ind = find(test_sr<1e-2);
+    ind = find(test_sr<1e-4);
 
     if ~isempty(ind)
         sols = sols(ind,:);

@@ -54,6 +54,8 @@ end
 
 function roots = runPolyEig(F,evblock)
 %%%Run the eigenvalue algorithm
+%%%Constructs tensor Dixon resultant, then solves eigenvalue problem and
+%%%extracts all coordinates of the roots
 
 d = size(F,1);
 %%%Extract dimensions, last d columns give degree in each variable, first 2
@@ -63,15 +65,19 @@ for i=1:d
     dims(i,:) = size(F{i});
 end
 
+%%%If the input is linear in any of the input dimensions, use specialized
+%%%algorithm
 if min(dims(1,3:end)) < 3
-    roots = runPolyEiglin(F);
+    roots = runPolyEiglin(F,evblock);
     return;
 end
 
+%%%If d=1, solve using colleague linearization
 if d==1
     roots = singChebPEP(flip(F{1},3));
 else
-%%%Construct Hidden Variable Resultant
+
+%%%Otherwise, Construct Hidden Variable Resultant
 R = tensorDixon(F,d,dims);
 
 %%%Solve via colleague linearization
@@ -90,9 +96,11 @@ roots(:,d) = lambda;
     idx = find(abs(diag(S)/S(1,1))>1e-13,1,'last');
     N = W(:,idx+1:end);
 
+%%%Root extraction for 2 and 3 variables
 %%%d=2
 if d==2
 if dims(1,3) < 3
+    %%%If we want to evaluate and solve subproblems
     for i = 1:size(lambda)
         if (isfinite(lambda(i)))
             v = flip(vandercheb(lambda(i),dims(1,d+2)));
@@ -105,7 +113,7 @@ if dims(1,3) < 3
             r1 = singChebPEP(flip(F1,3));
             r2 = singChebPEP(flip(F2,3));
         
-            %%%Closest
+            %%%Find closest
             if size(r1,1) > 0 && size(r2,1) > 0
                 T = r1-r2.';
                 [~,I] = min(abs(T),[],'all');
@@ -115,10 +123,13 @@ if dims(1,3) < 3
         end
     end
 else
+    %%%Extract first coordinate from eigenvectors
     j = prod(dims(:,1),'all');
     Vt = V(end-j+1:end,:);
     Vt(abs(Vt) < 1e-13) = nan;
+    %%%Get candidate ratios
     tmp = V(end-2*j+1:end-j,:)./Vt;
+    %%%Subselect ratios that are unaffected by the generic null space
     VV1 = max(abs(N(end-j+1:end,:)),[],2);
     VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
     if size(N,2) > 0
@@ -130,6 +141,8 @@ else
     tmp = tmp(ind,:);
     Vt = Vt(ind,:);
     [~,ind2] = max(abs(Vt),[],1);
+    %%%Assign roots only if we find at least one ratio that is sufficiently
+    %%%independent of the generic null space
     if size(ind2,1) > 0
         ind2 = sub2ind(size(tmp),ind2,1:size(Vt,2));
         roots(:,1) = tmp(ind2);
@@ -140,6 +153,7 @@ end
 if d==3
     if dims(1,3) == 2
         %%%Linear case, we can not extract from eigenvector
+        %%%Keeping only in case we want to evaluate and solve subproblems
         for i = 1:size(lambda,1)
             %%%Evaluate
             v = flip(vandercheb(lambda(i),dims(1,5)));
@@ -166,10 +180,13 @@ if d==3
             end
         end
     else
+        %%%Extract first coordinate from eigenvector ratios
         j = prod(dims(:,1),'all');
         Vt = V(end-j+1:end,:);
         %Vt(abs(Vt) < 1e-6) = nan;
+        %%%Get candidate ratios
         tmp = V(end-2*j+1:end-j,:)./Vt;
+        %%%Subselect ratios that are independent of the generic null space
         VV1 = max(abs(N(end-j+1:end,:)),[],2);
         VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
         if size(N,2) > 0
@@ -179,8 +196,11 @@ if d==3
         end
         tmp = tmp(ind,:);
         Vt = Vt(ind,:);
+        %%%Select percentage of ratios with the largest divisors based on
+        %%%parameter evblock
         k = ceil(size(Vt,1)/evblock);
         [~,ind2] = maxk(abs(Vt),k,1);
+        %%%Assign if we found at least one good ratio
         if size(ind2,1) > 0
             ind2 = sub2ind(size(tmp),ind2,repmat(1:size(Vt,2),k,1));
             tmp = tmp(ind2);
@@ -190,6 +210,7 @@ if d==3
 
     if dims(1,4) == 2
         %%%Linear case, we can not extract from eigenvector
+        %%%Keeping only in case we want to evaluate and solve subproblems
         for i = 1:size(lambda,1)
             %%%Evaluate
             v = flip(vandercheb(lambda(i),dims(1,5)));
@@ -216,10 +237,13 @@ if d==3
             end
         end
     else 
+        %%%Extract second coordinate from eigenvector ratios
         j = prod(dims(:,1),'all')*2*(dims(1,3)-1);
         Vt = V(end-j+1:end,:);
         %Vt(abs(Vt) < 1e-6) = nan;
+        %%%Get candidate ratios
         tmp = V(end-2*j+1:end-j,:)./Vt;
+        %%%Subselect ratios that are independent of the generic null space
         VV1 = max(abs(N(end-j+1:end,:)),[],2);
         VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
         if size(N,2) > 0
@@ -229,8 +253,11 @@ if d==3
         end
         tmp = tmp(ind,:);
         Vt = Vt(ind,:);
+        %%%Select percentage of ratios with the largest divisors based on
+        %%%parameter evblock
         k = ceil(size(Vt,1)/evblock);
         [~,ind2] = maxk(abs(Vt),k,1);
+        %%%Assign if we found at least one good ratio
         if size(ind2,1) > 0
             ind2 = sub2ind(size(tmp),ind2,repmat(1:size(Vt,2),k,1));
             tmp = tmp(ind2);
@@ -243,8 +270,9 @@ end
 
 
 
-function roots = runPolyEiglin(F)
+function roots = runPolyEiglin(F,evblock)
 %%%Run the eigenvalue algorithm, fast method for partially linear problem
+%%%Change of variables to do avoid solving extra eigenvalue problems
 
 d = size(F,1);
 %%%Extract dimensions, last d columns give degree in each variable, first 2
@@ -255,11 +283,15 @@ for i=1:d
     dims(i,:) = size(F{i});
 end
 
+%%%If d=1, solve using colleague linearization
 if d==1
     roots = singChebPEP(flip(F{1},3));
 elseif d==2
+%%%Otherwise, use hidden variable Dixon resultant
 %%%d=2
-%%%Construct Hidden Variable Resultant
+
+%%%Find linear coordinates, and swap if needed
+%%%Then construct resultant
 if dims(1,4)==2
     rev = 0;
     R = tensorDixon(F,d,dims);
@@ -279,25 +311,33 @@ roots(:,d) = lambda;
 
 %%%project eigenvectors
     v = flip(vandercheb(randn,size(R,3)));
-    %%%Evaluate
+    %%%Evaluate at a random point to find the generic null space of the
+    %%%resultant
     a = size(R,1);
     T = reshape(reshape(R,[],size(R,3))*v,a,a);
     [~,S,W] = svd(T);
     idx = find(abs(diag(S)/S(1,1))>1e-13,1,'last');
     N = W(:,idx+1:end);
-    for i = 1:size(V,2)
-       for j = 1:size(N,2)
-           V(:,i) = V(:,i) - (V(:,i).'*N(:,j))*N(:,j);
-       end
-    end
+    %%%Old option to project eigenvectors
+    % %%%Project eigenvectors orthogonal to generic null space
+    % for i = 1:size(V,2)
+    %    for j = 1:size(N,2)
+    %        V(:,i) = V(:,i) - (V(:,i).'*N(:,j))*N(:,j);
+    %    end
+    % end
     j = prod(dims(:,1),'all');
-    tmp = V(end-2*j+1:end-j,:)./V(end-j+1:end,:);
-    roots(:,1) = median(tmp,1,"omitnan");
+    % %%%Get candidate ratios of eigenvector entries
+    % tmp = V(end-2*j+1:end-j,:)./V(end-j+1:end,:);
+    % %%%Assign first coordinate of roots
+    % roots(:,1) = median(tmp,1,"omitnan");
 
 
     Vt = V(end-j+1:end,:);
     Vt(abs(Vt) < 1e-13) = nan;
+    %%%Get candidate ratios of eigenvector entries
     tmp = V(end-2*j+1:end-j,:)./Vt;
+    %%%Subselect eigenvector entries that are the most independent from the
+    %%%generic null space
     VV1 = max(abs(N(end-j+1:end,:)),[],2);
     VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
     if size(N,2) > 0
@@ -309,11 +349,13 @@ roots(:,d) = lambda;
     tmp = tmp(ind,:);
     Vt = Vt(ind,:);
     [~,ind2] = max(abs(Vt),[],1);
+    %%%Assign if we found at least one good entry
     if size(ind2,1) > 0
         ind2 = sub2ind(size(tmp),ind2,1:size(Vt,2));
         roots(:,1) = tmp(ind2);
     end
 
+%%%Swap coordinates back
 if rev
     roots = flip(roots,2);
 end
@@ -321,6 +363,7 @@ end
 elseif d==3
 %%%d==3;
 %%%Construct Hidden Variable Resultant
+%%%Swap dimensions to avoid solving subproblems if possible
 rev = dims(1,3:5) == 2;
 numlin = sum(rev);
 if isequal(rev,[0 0 1])
@@ -373,21 +416,25 @@ roots(:,d) = lambda;
 
 %%%project eigenvectors
     v = flip(vandercheb(randn,size(R,3)));
-    %%%Evaluate
+    %%%Evaluate to find the generic null space of the resultant
     a = size(R,1);
     T = reshape(reshape(R,[],size(R,3))*v,a,a);
     [~,S,W] = svd(T);
     idx = find(abs(diag(S)/S(1,1))>1e-13,1,'last');
     N = W(:,idx+1:end);
-    for i = 1:size(V,2)
-       for j = 1:size(N,2)
-           V(:,i) = V(:,i) - (V(:,i).'*N(:,j))*N(:,j);
-       end
-    end
+    %Old option to project
+    % for i = 1:size(V,2)
+    %    for j = 1:size(N,2)
+    %        V(:,i) = V(:,i) - (V(:,i).'*N(:,j))*N(:,j);
+    %    end
+    % end
+    %%%First coordinate
         j = prod(dims(:,1),'all');
         Vt = V(end-j+1:end,:);
         Vt(abs(Vt) < 1e-13) = nan;
+        %%%Get candidate eigenvector ratios
         tmp = V(end-2*j+1:end-j,:)./Vt;
+        %%%Subselect ratios that are independent of the generic null space
         VV1 = max(abs(N(end-j+1:end,:)),[],2);
         VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
         if size(N,2) > 0
@@ -398,17 +445,24 @@ roots(:,d) = lambda;
 
         tmp = tmp(ind,:);
         Vt = Vt(ind,:);
-        [~,ind2] = max(abs(Vt));
+        %%%Subselect ratios with the largest divisors
+        k = ceil(size(Vt,1)/evblock);
+        [~,ind2] = maxk(abs(Vt),k,1);
+        %%%Assign only if we find at least one good ratio
         if size(ind2,1) > 0
-            ind2 = sub2ind(size(tmp),ind2,1:size(Vt,2));
+            ind2 = sub2ind(size(tmp),ind2,repmat(1:size(Vt,2),k,1));
             %roots(:,1) = median(tmp,1,'omitnan');
-            roots(:,1) = tmp(ind2);
+            tmp = tmp(ind2);
+            roots(:,1) = median(tmp,1,'omitnan');
         end
 
-    
+    %%%Second coordinate
         j = prod(dims(:,1),'all')*2*(dims(1,3)-1);
+        Vt = V(end-j+1:end,:);
+        Vt(abs(Vt) < 1e-13) = nan;
+        %%%Get candidate eigenvector ratios
         tmp = V(end-2*j+1:end-j,:)./V(end-j+1:end,:);
-
+        %%%Subselect ratios that are independent of the generic null space
         VV1 = max(abs(N(end-j+1:end,:)),[],2);
         VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
         if size(N,2) > 0
@@ -416,15 +470,18 @@ roots(:,d) = lambda;
         else
             ind = ones(size(tmp,1));
         end
-        %tmp = tmp(ind,:);
-
         tmp = tmp(ind,:);
         Vt = Vt(ind,:);
-        [~,ind2] = max(abs(Vt));
+        %%%Subselect ratios with the largest divisors
+        k = ceil(size(Vt,1)/evblock);
+        [~,ind2] = maxk(abs(Vt),k,1);
+        %[~,ind2] = max(abs(Vt));
+        %%%Assign only if we find at least one good ratio
         if size(ind2,1) > 0
-            ind2 = sub2ind(size(tmp),ind2,1:size(Vt,2));
+            ind2 = sub2ind(size(tmp),ind2,repmat(1:size(Vt,2),k,1));
             %roots(:,1) = median(tmp,1,'omitnan');
-            roots(:,2) = tmp(ind2);
+            tmp = tmp(ind2);
+            roots(:,2) = median(tmp,1,'omitnan');
         end
 
         %roots(:,2) = median(tmp,1);
@@ -440,21 +497,24 @@ roots(:,3) = lambda1;
 %%%First coordinate
 %%%project eigenvectors
     v = flip(vandercheb(randn,size(R1,3)));
-    %%%Evaluate
+    %%%Evaluate to find the generic null space of the resultant
     a = size(R1,1);
     T = reshape(reshape(R1,[],size(R1,3))*v,a,a);
     [~,S,W] = svd(T);
     idx = find(abs(diag(S)/S(1,1))>1e-13,1,'last');
     N = W(:,idx+1:end);
-    for i = 1:size(V1,2)
-       for j = 1:size(N,2)
-           V1(:,i) = V1(:,i) - (V1(:,i).'*N(:,j))*N(:,j);
-       end
-    end
+    %%%Old option to project eigenvectors
+    % for i = 1:size(V1,2)
+    %    for j = 1:size(N,2)
+    %        V1(:,i) = V1(:,i) - (V1(:,i).'*N(:,j))*N(:,j);
+    %    end
+    % end
         j = prod(dims(:,1),'all');
         Vt = V1(end-j+1:end,:);
         %Vt(abs(Vt) < 1e-6) = nan;
+        %Get candidate ratios
         tmp = V1(end-2*j+1:end-j,:)./Vt;
+        %Subselect ratios that are independent of generic null space
         VV1 = max(abs(N(end-j+1:end,:)),[],2);
         VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
         if size(N,2) > 0
@@ -464,8 +524,10 @@ roots(:,3) = lambda1;
         end
         tmp = tmp(ind,:);
         Vt = Vt(ind,:);
-        k = ceil(size(Vt,1)/20);
+        %%%Subselect ratios with the largest divisors
+        k = ceil(size(Vt,1)/evblock);
         [~,ind2] = maxk(abs(Vt),k,1);
+        %%%Assign if we find at least one good ratio
         if size(ind2,1) > 0
             ind2 = sub2ind(size(tmp),ind2,repmat(1:size(Vt,2),k,1));
             tmp = tmp(ind2);
@@ -477,21 +539,24 @@ roots(:,3) = lambda1;
 
 %%%Second coordinate matching
 v = flip(vandercheb(randn,size(R2,3)));
-    %%%Evaluate
+    %%%Evaluate to find generic null space of the resultant
     a = size(R2,1);
     T = reshape(reshape(R2,[],size(R2,3))*v,a,a);
     [~,S,W] = svd(T);
     idx = find(abs(diag(S)/S(1,1))>1e-13,1,'last');
     N = W(:,idx+1:end);
-    for i = 1:size(V2,2)
-       for j = 1:size(N,2)
-           V2(:,i) = V2(:,i) - (V2(:,i).'*N(:,j))*N(:,j);
-       end
-    end
+    %Old option to project eigenvectors
+    % for i = 1:size(V2,2)
+    %    for j = 1:size(N,2)
+    %        V2(:,i) = V2(:,i) - (V2(:,i).'*N(:,j))*N(:,j);
+    %    end
+    % end
         j = prod(dims(:,1),'all');
         Vt = V2(end-j+1:end,:);
         %Vt(abs(Vt) < 1e-6) = nan;
+        %Get candidate eigenvector ratios
         tmp = V2(end-2*j+1:end-j,:)./Vt;
+        %Subselect ratios that are independent of the generic null space
         VV1 = max(abs(N(end-j+1:end,:)),[],2);
         VV2 = max(abs(N(end-2*j+1:end-j,:)),[],2);
         if size(N,2) > 0
@@ -507,9 +572,12 @@ v = flip(vandercheb(randn,size(R2,3)));
 
         tmp = tmp(ind,:);
         Vt = Vt(ind,:);
-        k = ceil(size(Vt,1)/20);
+        %%%Subselect ratios with the largest divisors
+        k = ceil(size(Vt,1)/evblock);
         [~,ind2] = maxk(abs(Vt),k,1);
         %rtmp = roots;
+        %%%Assign if we find at least one good ratio
+        %%%Match with first coordinate
         if size(ind2,1) > 0
             ind2 = sub2ind(size(tmp),ind2,repmat(1:size(Vt,2),k,1));
             tmp = tmp(ind2);
@@ -524,6 +592,7 @@ v = flip(vandercheb(randn,size(R2,3)));
 
 end
 
+%%%Swap coordinates back
 if isequal(rev,[0 1 0])
     roots = roots(:,[1 3 2]);
 elseif isequal(rev,[1 0 0])
@@ -652,6 +721,7 @@ function D = kron2(F,m)
     D = zeros(b,b,k,k);
     R = 2*R;
 
+    %%%Modified Bartels-Stewart to divide by s-t, for each matrix entry
     if k == 1
         D = R(:,:,1,2); 
     else
@@ -741,6 +811,9 @@ function D = kron3(F)
 
     D = zeros(b,b,n1-1,2*n1-2,2*n2-1,n2);
     R = 2*permute(R,[1 2 3 5 4 6]);
+
+    %%%Modified Bartels-Stewart to divide in each matrix entry
+    %%%Two rounds of division, stored as separate tensor dimensions
 
     %%%First dimension
     if n1 == 2
